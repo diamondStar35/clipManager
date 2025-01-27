@@ -1,0 +1,151 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Vietnamese 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-22 22:49+0200\n"
+"PO-Revision-Date: 2025-01-23 22:32+0700\n"
+"Last-Translator: \n"
+"Language-Team: ddt.one\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.5\n"
+
+#: globalPlugins/clip_manager/__init__.py:45
+msgid "Full Clipboard Text"
+msgstr "Văn bản đầy đủ của bảng nhớ tạm"
+
+#: globalPlugins/clip_manager/__init__.py:54
+#: globalPlugins/clip_manager/__init__.py:153
+msgid "Close"
+msgstr "Đóng"
+
+#: globalPlugins/clip_manager/__init__.py:67
+msgid "Add New Item"
+msgstr "Thêm mục mới"
+
+#: globalPlugins/clip_manager/__init__.py:74
+msgid "Enter text:"
+msgstr "Nhập văn bản:"
+
+#: globalPlugins/clip_manager/__init__.py:81
+msgid "Pinned"
+msgstr "Đã ghim"
+
+#: globalPlugins/clip_manager/__init__.py:86
+#: globalPlugins/clip_manager/__init__.py:118
+msgid "Save"
+msgstr "Lưu"
+
+#: globalPlugins/clip_manager/__init__.py:138
+msgid "Clipboard History"
+msgstr "Lịch sử bảng nhớ tạm"
+
+#: globalPlugins/clip_manager/__init__.py:151
+msgid "Paste"
+msgstr "Dán"
+
+#: globalPlugins/clip_manager/__init__.py:178
+msgid "Edit"
+msgstr "Chỉnh sửa"
+
+#: globalPlugins/clip_manager/__init__.py:180
+msgid "Delete"
+msgstr "Xóa bỏ"
+
+#: globalPlugins/clip_manager/__init__.py:186
+msgid "Unpin"
+msgstr "Bỏ ghim"
+
+#: globalPlugins/clip_manager/__init__.py:186
+#: globalPlugins/clip_manager/__init__.py:190
+#: globalPlugins/clip_manager/__init__.py:201
+msgid "Pin"
+msgstr "Ghim"
+
+#: globalPlugins/clip_manager/__init__.py:194
+msgid "View Full Text"
+msgstr "Xem toàn văn"
+
+#: globalPlugins/clip_manager/__init__.py:203
+msgid "Add"
+msgstr "Thêm"
+
+#: globalPlugins/clip_manager/__init__.py:205
+msgid "Clear All"
+msgstr "Xóa tất cả"
+
+#: globalPlugins/clip_manager/__init__.py:227
+msgid "Pasted!"
+msgstr "Đã dán!"
+
+#: globalPlugins/clip_manager/__init__.py:231
+msgid "Cannot paste: Focus is not on an editable text control."
+msgstr "Không thể dán: Tiêu điểm không nằm trên vùng văn bản có thể chỉnh sửa."
+
+#: globalPlugins/clip_manager/__init__.py:235
+msgid "Error pasting: {}"
+msgstr "Lỗi dán: {}"
+
+#: globalPlugins/clip_manager/__init__.py:251
+msgid "Edit Text"
+msgstr "Chỉnh sửa văn bản"
+
+#: globalPlugins/clip_manager/__init__.py:286
+msgid "This item cannot be edited because it is not a text."
+msgstr "Mục này không thể chỉnh sửa vì nó không phải là văn bản."
+
+#: globalPlugins/clip_manager/__init__.py:369
+msgid "Clipboard History Settings"
+msgstr "Cài đặt lịch sử bảng nhớ tạm"
+
+#: globalPlugins/clip_manager/__init__.py:375
+msgid "History size:"
+msgstr "Kích thước lịch sử:"
+
+#: globalPlugins/clip_manager/__init__.py:388
+msgid "Save history on exit"
+msgstr "Lưu lịch sử khi thoát"
+
+#: globalPlugins/clip_manager/__init__.py:396
+msgid "Save threshold:"
+msgstr "Ngưỡng lưu:"
+
+#: globalPlugins/clip_manager/__init__.py:406
+msgid "Display characters per item:"
+msgstr "Số ký tự hiển thị mỗi mục:"
+
+#: globalPlugins/clip_manager/__init__.py:494
+msgid "Shows clipboard history"
+msgstr "Hiển thị lịch sử bảng nhớ tạm"
+
+#: globalPlugins/clip_manager/__init__.py:496
+msgid "clip_manager"
+msgstr ""
+
+#: globalPlugins/clip_manager/__init__.py:501
+msgid "Clipboard history is empty."
+msgstr "Lịch sử bảng nhớ tạm trống."
+
+#: globalPlugins/clip_manager/__init__.py:538
+msgid "Failed to get clipboard text: {}"
+msgstr "Không lấy được văn bản từ bảng nhớ tạm: {}"
+
+#: globalPlugins/clip_manager/__init__.py:557
+msgid "Error loading clipboard history: Invalid JSON format."
+msgstr "Lỗi tải lịch sử bảng nhớ tạm: Định dạng JSON không hợp lệ."
+
+#: globalPlugins/clip_manager/__init__.py:560
+msgid "Error loading clipboard history: {}"
+msgstr "Lỗi tải lịch sử bảng nhớ tạm: {}"
+
+#: globalPlugins/clip_manager/__init__.py:570
+msgid "Error saving clipboard history!"
+msgstr "Lỗi lưu lịch sử bảng nhớ tạm!"

@@ -10,6 +10,33 @@
 <p>You can customize the clipboard size, Pin / unpin items, And a lot more. You can find it's settings under NVDA's settings, Preferences, > Settings, > Clipboard history settings. From there you can choose the saving threshold, History size, And display characters per item.</p>
 <p>The add-on has one shortcut to open it's interface. The default shortcut is NVDA + v.</p>
 <p>Additional options for the currently selected item can be accessed by pressing the context menu key (Applications) on a focused item.</p>
+<h2>Hot keys</h2>
+<p>The following shortcut keys work only after opening the main interface of the add-on.</p>
+<ul>
+<li>Enter: Attempts to paste the selected item. If the add-on cannot find an editable text area: It will be copyed to the clipboard, And will be moved to the top of the list.</li>
+<li>Delete (Del): Removes the focused item from the clipboard history.</li>
+<li>Shift + up arrow: Moves the item one position up in the list.</li>
+<li>Shift + down arrow: Moves the item one position down in the list.</li>
+<li>F2: Edit the selected item.</li>
+<li>Control + n: Opens up a dialog for adding a new item to the history.</li>
+</ul>
+<h2>Change log</h2>
+<h3>Version 0.3</h3>
+<p>This version brings new major features, Focusing on preventing users from losing their history as possible. Thus: There are 2 new features that allow you to backup or restore your clipboard history at any time, As well as also preventing accedent deletion of items. Here are the details.</p>
+<ul>
+<li>There is a new menu in the context menu: "Backup" That allows you to import and export your clipboard history to any location you choose. Open the add-on's interface, Press the context menu and you should see the new menu, Follow the instructions to import or export your history.</li>
+<li>A new checkbox setting in NVDA's settings, > clipboard history settings that allows you to show a warning before deleting an item from clipboard. It is enabled by default, You may disable this option if you don't like it by going into NVDA's settings.</li>
+<li>From now on: You will not lose your history again when you update the add-on. There is a new directory outside the addons folder named "clipManager" Which holds the history file. Previously when you update the add-on: It overwrites the history file because the intire directory is being deleted and recreated, This will never happen again.</li>
+<li>Updated compatibility with NVDA 2025.</li>
+</ul>
+<h3>Version 0.2:</h3>
+<ul>
+<li>Added a new feature to edit the focused item, Accessing it by pressing the context menu key on your keyboard, Or use the shortcut key F2.</li>
+<li>Added an option to manually add items to the history for easy access later, Control + n, Or thrugh the context menu.</li>
+<li>You can now rearrange the items in the list by moving them up or down. Use the shortcuts shift + up arrow, And shift + down arrow.</li>
+<li>Implemented the translation feature for translating the add-on into different languages. Please contact me if you want your language to be added.</li>
+<li>Fixed some bugs related to unicode characters not being handled correctly, Especially for none latin text.</li>
+</ul>
 <h2>Contact info</h2>
 <ul>
 <li><a href="https://t.me/diamondStar35">Telegram</a></li>

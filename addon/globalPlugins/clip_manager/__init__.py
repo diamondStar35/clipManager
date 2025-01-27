@@ -4,6 +4,7 @@ sys.path.append(os.path.dirname(__file__))
 
 from scriptHandler import script
 import globalPluginHandler, ui, api, gui, config, NVDAObjects
+import config
 import pyperclip
 import ctypes
 import ctypes.wintypes
@@ -204,6 +205,16 @@ class ClipboardHistoryFrame(wx.Frame):
         # Translators: Label for the clear all items in the context menu.
         clear_all_item = menu.Append(wx.ID_ANY, _("Clear All"))
 
+        backup_menu = wx.Menu()
+        # Translators: Label for the 'import history' item in the context menu.
+        import_item = backup_menu.Append(wx.ID_ANY, _("Import history"))
+        # Translators: Label for the 'export history' item in the context menu.
+        export_item = backup_menu.Append(wx.ID_ANY, _("Export history"))
+
+        self.Bind(wx.EVT_MENU, self.onImportHistory, import_item)
+        self.Bind(wx.EVT_MENU, self.onExportHistory, export_item)
+        menu.AppendSubMenu(backup_menu, _("Backup"))
+
         self.Bind(wx.EVT_MENU, lambda evt: self.onEdit(selection, text), edit_item)
         self.Bind(wx.EVT_MENU, lambda evt: self.deleteItem(selection), delete_item)
         self.Bind(wx.EVT_MENU, lambda evt: self.togglePinItem(selection), pin_item)
@@ -304,10 +315,18 @@ class ClipboardHistoryFrame(wx.Frame):
     def deleteItem(self, selection):
         """Deletes the selected item from the listbox and clipboard history."""
         if selection != wx.NOT_FOUND:
+            if config.conf['clipManager']['showWarning']:
+                # Translators: Confirmation message before deleting a clipboard item.
+                if gui.messageBox(_("Are you sure you want to delete this item?"),
+                                  # Translators: Title for the delete confirmation dialog.
+                                  _("Confirm Deletion"),
+                                  wx.YES_NO | wx.ICON_WARNING) == wx.NO:
+                    return  # Cancel deletion
+
             del self.clipboard_history[selection]
             self.listbox.Delete(selection)      
             self.listbox.SetSelection(0)
-        self.plugin_instance.saveHistory()
+            self.plugin_instance.saveHistory()
 
     def togglePinItem(self, selection):
         """Toggles the pin status of the selected item."""
@@ -334,6 +353,72 @@ class ClipboardHistoryFrame(wx.Frame):
 
         add_dialog = AddDialog(self, on_save)
         add_dialog.ShowModal()
+
+    def onImportHistory(self, event):
+        """Handles the import history action."""
+        wildcard = "JSON files (*.json)|*.json|" \
+                   "All files (*.*)|*.*"
+        # Translators: Title for the import history file dialog.
+        dlg = wx.FileDialog(self, _("Choose a history file to import"),
+                            wildcard=wildcard,
+                            style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        path = dlg.GetPath()
+        dlg.Destroy()
+
+        if path:
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    new_history = json.load(f)
+                # Validate the imported history
+                for item in new_history:
+                    if not isinstance(item, dict) or 'text' not in item or 'pinned' not in item:
+                        raise ValueError("Invalid history format")
+
+                # Translators: Confirmation message before overwriting current history.
+                if gui.messageBox(_("Importing this history will overwrite your current history. Are you sure you would like to continue?"),
+                                  # Translators: Title for the import history confirmation dialog.
+                                  _("Warning"),
+                                  wx.YES_NO | wx.ICON_WARNING) == wx.YES:
+                    self.clipboard_history[:] = new_history
+                    self.updateListBox()
+                    self.plugin_instance.saveHistory()
+                    # Translators: Success message after importing history.
+                    gui.messageBox(_("History imported successfully."), _("Success"), wx.OK | wx.ICON_INFORMATION)
+            except (ValueError, json.JSONDecodeError):
+                # Translators: Error message when the selected file is not a valid history file.
+                ui.message(_("Invalid history file format."))
+            except Exception as e:
+                # Translators: Error message when importing history fails.
+                ui.message(_("Error importing history: {}").format(e))
+
+    def onExportHistory(self, event):
+        """Handles the export history action."""
+        wildcard = "JSON files (*.json)|*.json|" \
+                   "All files (*.*)|*.*"
+        # Translators: Title for the export history file dialog.
+        dlg = wx.FileDialog(self, _("Save history as"),
+                            wildcard=wildcard,
+                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        path = dlg.GetPath()
+        dlg.Destroy()
+
+        if path:
+            if not path.lower().endswith(".json"):
+                path += ".json"
+            try:
+                with open(path, "w", encoding="utf-8") as f:
+                    json.dump(self.clipboard_history, f, ensure_ascii=False, indent=4)
+                # Translators: Success message after exporting history.
+                gui.messageBox(_("Your clipboard History has been exported successfully."), _("Export Success"), wx.OK | wx.ICON_INFORMATION)
+            except Exception as e:
+                # Translators: Error message when exporting history fails.
+                ui.message(_("Error exporting history: {}").format(e))
 
     def moveItemUp(self, selection):
         """Moves the selected item one position up in the list."""
@@ -412,6 +497,15 @@ class Settings(BaseSettingsPanel):
         )
         self.displayCharsSpin.Bind(wx.EVT_SPINCTRL, self.onDisplayCharsChanged)
 
+        # Translators: Label for the 'show warning on delete' checkbox.
+        self.showWarningCheck = sHelper.addItem(
+            wx.CheckBox(self, -1, _("Show a warning dialog when deleting items"))
+        )
+        self.showWarningCheck.SetValue(
+            config.conf["clipManager"].get("showWarning", True)
+        )
+        self.showWarningCheck.Bind(wx.EVT_CHECKBOX, self.onWarningCheckChanged)
+
     def onSpinCtrlChanged(self, event):
         config.conf['clipManager']['historySize'] = self.historySizeSpin.GetValue()
     
@@ -424,6 +518,9 @@ class Settings(BaseSettingsPanel):
     def onDisplayCharsChanged(self, event):
         config.conf['clipManager']['displayChars'] = self.displayCharsSpin.GetValue()
 
+    def onWarningCheckChanged(self, event):
+        config.conf['clipManager']['showWarning'] = self.showWarningCheck.GetValue()
+
     def onSave(self):
         config.conf.save()
 
@@ -433,6 +530,7 @@ clipManagerSetting = {
     "saveHistory": "boolean(default=True)",
     "saveThreshold": "integer(default=5)",
     "displayChars": "integer(default=2000)",
+    "showWarning": "boolean(default=True)",
 }
 config.conf.spec[clipManagerSection] = clipManagerSetting
 
@@ -440,11 +538,15 @@ config.conf.spec[clipManagerSection] = clipManagerSetting
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     clipboard_history = []
     dlg = None
-    history_file = os.path.join(os.path.dirname(__file__), "history.json")
+    history_file = os.path.join(config.getUserDefaultConfigPath(), "clipManager", "history.json")
     copy_count = 0 # Counter for copy attempts
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Create the "clip_manager" directory if it doesn't exist
+        clip_manager_dir = os.path.dirname(self.history_file)
+        if not os.path.exists(clip_manager_dir):
+            os.makedirs(clip_manager_dir)
         self.loadHistory()
 
         # Create hidden window
