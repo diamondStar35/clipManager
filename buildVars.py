@@ -25,7 +25,7 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description": _("""An easy way to access and manage clipboard history."""),
 	# version
-	"addon_version": "0.3",
+	"addon_version": "0.4",
 	# Author(s)
 	"addon_author": "Abdalrahmen Maher <ramymaherali55@gmail.com>",
 	# URL for the add-on documentation support
