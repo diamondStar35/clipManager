@@ -1,10 +1,12 @@
+import addonHandler
+addonHandler.initTranslation()
+
 import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
 from scriptHandler import script
-import globalPluginHandler, ui, api, gui, config, NVDAObjects
-import config
+import globalPluginHandler, ui, api, gui, config, NVDAObjects, wx
 import pyperclip
 import ctypes
 import ctypes.wintypes
@@ -14,8 +16,7 @@ from gui.settingsDialogs import SettingsPanel as BaseSettingsPanel
 import pyautogui
 import json
 import time
-import addonHandler
-addonHandler.initTranslation()
+from .search import SearchDialog
 
 WM_CLIPBOARDUPDATE = 0x031D
 WNDPROC = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.wintypes.HWND, ctypes.c_uint, ctypes.wintypes.WPARAM, ctypes.wintypes.LPARAM)
@@ -141,6 +142,8 @@ class ClipboardHistoryFrame(wx.Frame):
         self.obj=obj
         self.clear_history = clear_history
         self.plugin_instance = plugin_instance
+        self.search_results = []
+        self.current_result_index = -1
 
         self.panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -268,6 +271,11 @@ class ClipboardHistoryFrame(wx.Frame):
             del self.clipboard_history[selection]
             self.listbox.Delete(selection)      
 
+    def show_search_dialog(self):
+        """Opens the search dialog."""
+        search_dialog = SearchDialog(self, self.clipboard_history)
+        search_dialog.ShowModal()
+
     def onClose(self, event):
         self.Destroy()
 
@@ -297,8 +305,74 @@ class ClipboardHistoryFrame(wx.Frame):
                     ui.message(_("This item cannot be edited because it is not a text."))
         elif keycode == ord('N') and modifiers == wx.MOD_CONTROL:
             self.onAdd(None)
+        elif keycode == ord('F') and modifiers == wx.MOD_CONTROL:
+            self.show_search_dialog()
+        elif keycode == wx.WXK_F3:
+            if self.search_results:
+                if modifiers == wx.MOD_SHIFT:
+                    self.show_previous_result()
+                else:
+                    self.show_next_result()
+            else:
+                self.show_search_dialog()
         else:
             event.Skip()
+
+    def set_search_results(self, results, current_index):
+        self.search_results = results
+        self.current_result_index = current_index
+
+    def show_next_result(self):
+        if self.search_results:
+            current_selection_index = self.listbox.GetSelection()
+            next_result_index = -1
+
+            # Find the next result index
+            for i in range(len(self.search_results)):
+                if self.search_results[i] > current_selection_index:
+                    next_result_index = i
+                    break
+
+            if next_result_index == -1:
+                # If no next result is found, and current selection is not the last result
+                if current_selection_index != self.search_results[-1]:
+                    next_result_index = 0
+                else:
+                    # Translators: Message indicating that there are no more results.
+                    wx.MessageBox(_("No more results."), _("Search"), wx.OK | wx.ICON_INFORMATION, self)
+                    return
+
+            self.current_result_index = next_result_index
+            self.listbox.SetSelection(self.search_results[self.current_result_index])
+            self.listbox.SetFocus()
+        else:
+            self.show_search_dialog()
+
+    def show_previous_result(self):
+        if self.search_results:
+            current_selection_index = self.listbox.GetSelection()
+            previous_result_index = -1
+
+            # Find the previous result index
+            for i in range(len(self.search_results) - 1, -1, -1):
+                if self.search_results[i] < current_selection_index:
+                    previous_result_index = i
+                    break
+
+            if previous_result_index == -1:
+                # If no previous result is found, and current selection is not the first result
+                if current_selection_index != self.search_results[0]:
+                    previous_result_index = len(self.search_results) - 1
+                else:
+                    # Translators: Message indicating that there are no previous results.
+                    wx.MessageBox(_("No previous results."), _("Search"), wx.OK | wx.ICON_INFORMATION, self)
+                    return
+
+            self.current_result_index = previous_result_index
+            self.listbox.SetSelection(self.search_results[self.current_result_index])
+            self.listbox.SetFocus()
+        else:
+            self.show_search_dialog()
 
     def viewFullText(self, text):
         """Opens a new frame to display the full text."""
@@ -447,6 +521,12 @@ class ClipboardHistoryFrame(wx.Frame):
             if len(text) > config.conf['clipManager']['displayChars']:
                 truncated_text += " (See more)"
             self.listbox.Append(truncated_text)
+
+    def onClose(self, event):
+        if self.search_results:
+            self.search_results = []  # Clear results on close
+            self.current_result_index = -1
+        self.Destroy()
 
 
 class Settings(BaseSettingsPanel):
