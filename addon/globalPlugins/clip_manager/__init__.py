@@ -167,7 +167,7 @@ class ClipboardHistoryFrame(wx.Frame):
         self.listbox.Bind(wx.EVT_LISTBOX_DCLICK, self.onPaste)
         self.Bind(wx.EVT_CHAR_HOOK, self.onCharHook)
         self.listbox.Bind(wx.EVT_CONTEXT_MENU, self.on_context_menu)
-
+        self.updateListBox()
         self.listbox.SetFocus()
 
 
@@ -230,9 +230,7 @@ class ClipboardHistoryFrame(wx.Frame):
         selection = self.listbox.GetSelection()
         if selection != wx.NOT_FOUND:
             try:
-                selected_item = self.clipboard_history.pop(selection)
-                self.clipboard_history.insert(0, selected_item)
-                self.updateListBox()
+                selected_item = self.clipboard_history[selection]
                 selected_text = selected_item.get("text", "") if isinstance(selected_item, dict) else selected_item
 
                 if self.obj.role == 8:
@@ -244,6 +242,10 @@ class ClipboardHistoryFrame(wx.Frame):
                     ui.message(
                         _("Cannot paste: Focus is not on an editable text control.")
                     )
+                if config.conf['clipManager']['moveToTop']:
+                    self.clipboard_history.pop(selection)
+                    self.clipboard_history.insert(0, selected_item)
+                    self.updateListBox()
             except Exception as e:
                 # Translators: Message indicating that an error occurred while pasting.
                 ui.message(_("Error pasting: {}").format(str(e)))
@@ -513,7 +515,7 @@ class ClipboardHistoryFrame(wx.Frame):
             self.plugin_instance.saveHistory()
 
     def updateListBox(self):
-        """Refreshes the listbox content based on the current clipboard history."""
+        """Refreshes the listbox content."""
         self.listbox.Clear()
         for item in self.clipboard_history:
             text = item.get('text', '') if isinstance(item, dict) else item
@@ -586,6 +588,20 @@ class Settings(BaseSettingsPanel):
         )
         self.showWarningCheck.Bind(wx.EVT_CHECKBOX, self.onWarningCheckChanged)
 
+        # Translators: Label for the 'move to top when pasting' checkbox.
+        self.moveToTopCheck = sHelper.addItem(wx.CheckBox(self, -1, _("Move the item to the top of the list when pasting")))
+        self.moveToTopCheck.SetValue(config.conf["clipManager"].get("moveToTop", True))
+        self.moveToTopCheck.Bind(wx.EVT_CHECKBOX, self.onMoveToTopChanged)
+
+        # Translators: Label for the 'move duplicate to top when copying' checkbox.
+        self.moveDuplicateToTopCheck = sHelper.addItem(
+            wx.CheckBox(self, -1, _("Move duplicate items to the top when copying"))
+        )
+        self.moveDuplicateToTopCheck.SetValue(
+            config.conf["clipManager"].get("moveDuplicateToTop", False)
+        )
+        self.moveDuplicateToTopCheck.Bind(wx.EVT_CHECKBOX, self.onMoveDuplicateToTopChanged)
+
     def onSpinCtrlChanged(self, event):
         config.conf['clipManager']['historySize'] = self.historySizeSpin.GetValue()
     
@@ -601,6 +617,12 @@ class Settings(BaseSettingsPanel):
     def onWarningCheckChanged(self, event):
         config.conf['clipManager']['showWarning'] = self.showWarningCheck.GetValue()
 
+    def onMoveToTopChanged(self, event):
+        config.conf['clipManager']['moveToTop'] = self.moveToTopCheck.GetValue()
+
+    def onMoveDuplicateToTopChanged(self, event):
+        config.conf['clipManager']['moveDuplicateToTop'] = self.moveDuplicateToTopCheck.GetValue()
+
     def onSave(self):
         config.conf.save()
 
@@ -611,6 +633,9 @@ clipManagerSetting = {
     "saveThreshold": "integer(default=5)",
     "displayChars": "integer(default=2000)",
     "showWarning": "boolean(default=True)",
+    "moveToTop": "boolean(default=True)",
+    "separatePinnedList": "boolean(default=False)",
+    "moveDuplicateToTop": "boolean(default=False)",
 }
 config.conf.spec[clipManagerSection] = clipManagerSetting
 
@@ -620,6 +645,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
     dlg = None
     history_file = os.path.join(config.getUserDefaultConfigPath(), "clipManager", "history.json")
     copy_count = 0 # Counter for copy attempts
+    menu_item = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -654,6 +680,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
         ctypes.windll.user32.AddClipboardFormatListener(self.hwnd)
         NVDASettingsDialog.categoryClasses.append(Settings)
+        self.tools_menu = gui.mainFrame.sysTrayIcon.toolsMenu
+        # Translators: Menu item text.  '&' makes 'h' the access key.
+        self.menu_item = self.tools_menu.Append(
+            wx.ID_ANY, _("&Clipboard history")
+        )
+        self.tools_menu.Bind(wx.EVT_MENU, self.showClipboardHistory_menu, self.menu_item)
+
 
     def terminate(self):
         self.saveHistory()
@@ -661,6 +694,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         ctypes.windll.user32.RemoveClipboardFormatListener(self.hwnd)
         ctypes.windll.user32.DestroyWindow(self.hwnd)
         ctypes.windll.user32.UnregisterClassW(self.wndclass.lpszClassName, self.hinst)
+        if self.menu_item:
+            self.tools_menu.Delete(self.menu_item.GetId())
+            self.menu_item = None
 
     def wndProc(self, hwnd, msg, wparam, lparam):
         if msg == WM_CLIPBOARDUPDATE:
@@ -687,16 +723,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         mainFrame.prePopup()
         self.dlg = ClipboardHistoryFrame(mainFrame, self.clipboard_history, obj, self.clearClipboardHistory, self)
         self.dlg.CentreOnScreen()
-
-        # Update Listbox with truncated text
-        self.dlg.listbox.Clear()
-        for item in self.clipboard_history:
-            text = item.get('text', '') if isinstance(item, dict) else item
-            truncated_text = text[:config.conf['clipManager']['displayChars']]
-            if len(text) > config.conf['clipManager']['displayChars']:
-                truncated_text += " (See more)"
-            self.dlg.listbox.Append(truncated_text)
-
         self.dlg.Show(True)
         mainFrame.postPopup()
 
@@ -704,7 +730,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         try:
             new_text = pyperclip.paste()
             # Efficiently check if the new text is already present, considering both string and dictionary formats
-            if not any(item == new_text or (isinstance(item, dict) and item.get('text') == new_text) for item in self.clipboard_history):
+            move_to_top = config.conf['clipManager']['moveDuplicateToTop']
+            existing_index = -1
+            for i, item in enumerate(self.clipboard_history):
+                if (isinstance(item, dict) and item.get('text') == new_text) or (isinstance(item, str) and item == new_text):
+                    existing_index = i
+                    break
+
+            if new_text and existing_index != -1 and move_to_top:
+                # Move existing item to top
+                existing_item = self.clipboard_history.pop(existing_index)
+                if isinstance(existing_item, str):
+                    existing_item = {'text': existing_item, 'pinned': False}
+                self.clipboard_history.insert(0, existing_item)
+            elif new_text and not any(item == new_text or (isinstance(item, dict) and item.get('text') == new_text) for item in self.clipboard_history):
                 # Add new items as dictionaries for consistent handling of pinned status
                 self.clipboard_history.insert(0, {'text': new_text, 'pinned': False})
                 if len(self.clipboard_history) > config.conf['clipManager']['historySize']:
@@ -750,3 +789,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
             except:
                 # Translators: Error message when saving history fails.
                 ui.message(_("Error saving clipboard history!"))
+
+    def showClipboardHistory_menu(self, event): # Add this
+        """Shows the clipboard history dialog."""
+        if not self.clipboard_history:
+            # Translators: Message shown when the clipboard history is empty.
+            ui.message(_("Clipboard history is empty."))
+            return
+
+        obj = api.getFocusObject()
+        mainFrame.prePopup()
+        self.dlg = ClipboardHistoryFrame(mainFrame, self.clipboard_history, obj, self.clearClipboardHistory, self)
+        self.dlg.CentreOnScreen()
+        self.dlg.Show(True)
+        mainFrame.postPopup()
