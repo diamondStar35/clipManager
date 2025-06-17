@@ -2,10 +2,10 @@
 	"addonId": "clipManager",
 	"addonVersionNumber": {
 		"major": 0,
-		"minor": 5,
+		"minor": 6,
 		"patch": 0
 	},
-	"addonVersionName": "0.3",
+	"addonVersionName": "0.6",
 	"displayName": "Clip manager",
 	"publisher": "Abdalrahmen Maher",
 	"description": "An easy way to manage clipboard history.",
@@ -16,8 +16,8 @@
 		"patch": 0
 	},
 	"lastTestedVersion": {
-		"major": 2024,
-		"minor": 4,
+		"major": 2025,
+		"minor": 1,
 		"patch": 0
 	},
 	"channel": "stable",
